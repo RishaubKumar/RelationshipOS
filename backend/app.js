@@ -13,7 +13,12 @@ const customerRoutes = require('./src/routes/customerRoutes');
 const analyticsRoutes = require('./src/routes/analyticsRoutes');
 const aiRoutes = require('./src/routes/aiRoutes');
 
-console.log('Loaded MONGODB_URI from dotenv:', process.env.MONGODB_URI);
+// Check if environment variables are set (to display clearly in Vercel logs)
+if (!process.env.MONGODB_URI) {
+  console.error('CRITICAL DATABASE ERROR: MONGODB_URI environment variable is missing or undefined!');
+} else {
+  console.log('MongoDB connection string loaded successfully.');
+}
 
 const app = express();
 
