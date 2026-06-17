@@ -22,20 +22,56 @@ if (!process.env.MONGODB_URI) {
 
 const app = express();
 
+const PORT = process.env.PORT || 5000;
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/relationshipOS';
+
+let connectionPromise = null;
+
+// Helper function to manage MongoDB connection state
+const connectDB = async () => {
+  if (mongoose.connection.readyState === 1) {
+    return mongoose.connection;
+  }
+  if (!connectionPromise) {
+    console.log('Initiating database connection...');
+    connectionPromise = mongoose.connect(MONGODB_URI, {
+      useNewUrlParser: true,
+      useUnifiedTopology: true
+    }).then((m) => {
+      console.log('Successfully connected to MongoDB Atlas.');
+      return m;
+    }).catch((err) => {
+      console.error('Failed to connect to MongoDB:', err.message);
+      connectionPromise = null;
+      throw err;
+    });
+  }
+  return connectionPromise;
+};
+
+// Start connecting to the database immediately
+connectDB().catch((err) => {
+  console.error('Initial background connection failed:', err.message);
+});
+
 // middlewares
 app.use(cors());
 app.use(express.json());
 
-// Middleware to fail fast if database connection is not established
-app.use((req, res, next) => {
+// Middleware to ensure database connection before handling requests
+app.use(async (req, res, next) => {
   if (req.path === '/') {
     next();
-  } else if (mongoose.connection.readyState !== 1) {
-    res.status(500).json({
-      message: 'Database connection is not established. Please configure MONGODB_URI on Vercel and whitelist Vercel IPs (0.0.0.0/0) in MongoDB Atlas.'
-    });
   } else {
-    next();
+    try {
+      await connectDB();
+      next();
+    } catch (err) {
+      res.status(500).json({
+        message: 'Database connection failed. Please configure MONGODB_URI on Vercel and whitelist Vercel IPs (0.0.0.0/0) in MongoDB Atlas.',
+        error: err.message
+      });
+    }
   }
 });
 
@@ -48,21 +84,6 @@ app.use('/api/ai', aiRoutes);
 // basic test route
 app.get('/', (req, res) => {
   res.send('RelationshipOS API is running on Vercel...');
-});
-
-const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/relationshipOS';
-
-// connect to database globally (cached in serverless environments)
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log('Successfully connected to MongoDB Atlas.');
-})
-.catch((err) => {
-  console.error('Failed to connect to MongoDB:', err.message);
 });
 
 // only call app.listen if running locally (not in Vercel serverless environment)
