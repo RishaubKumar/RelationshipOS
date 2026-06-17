@@ -87,7 +87,13 @@ const AiSuggestions = () => {
     return '#10b981';
   };
 
-  // 1. calculate selector layout using standard if-else instead of ternary
+  // 1. calculate submit button text using standard if-else instead of ternary
+  let submitButtonText = 'Generate AI Strategy';
+  if (loadingSuggestions) {
+    submitButtonText = 'Analyzing...';
+  }
+
+  // 2. calculate selector layout using standard if-else instead of ternary
   let customerSelectSection;
   if (loadingCustomers) {
     customerSelectSection = (
@@ -131,12 +137,6 @@ const AiSuggestions = () => {
         </button>
       </form>
     );
-  }
-
-  // 2. calculate submit button text using standard if-else instead of ternary
-  let submitButtonText = 'Generate AI Strategy';
-  if (loadingSuggestions) {
-    submitButtonText = 'Analyzing...';
   }
 
   return (
