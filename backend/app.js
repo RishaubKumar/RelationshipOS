@@ -29,29 +29,30 @@ app.use('/api/ai', aiRoutes);
 
 // basic test route
 app.get('/', (req, res) => {
-  res.send('RelationshipOS API is running...');
+  res.send('RelationshipOS API is running on Vercel...');
 });
 
 const PORT = process.env.PORT || 5000;
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/relationshipOS';
 
-// connect to database
+// connect to database globally (cached in serverless environments)
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true
 })
 .then(() => {
-  console.log('Successfully connected to MongoDB Atlas / Local Database.');
-  app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
-  });
+  console.log('Successfully connected to MongoDB Atlas.');
 })
 .catch((err) => {
   console.error('Failed to connect to MongoDB:', err.message);
-  console.log('Running server in offline mode without DB connectivity. Certain features might error out.');
-  
-  // start server anyway even if db fails
-  app.listen(PORT, () => {
-    console.log(`Server running in local-fallback mode on port ${PORT} (Database disconnected)`);
-  });
 });
+
+// only call app.listen if running locally (not in Vercel serverless environment)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`Server is running locally on port ${PORT}`);
+  });
+}
+
+// export app for vercel serverless function compatibility
+module.exports = app;
