@@ -26,6 +26,19 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Middleware to fail fast if database connection is not established
+app.use((req, res, next) => {
+  if (req.path === '/') {
+    next();
+  } else if (mongoose.connection.readyState !== 1) {
+    res.status(500).json({
+      message: 'Database connection is not established. Please configure MONGODB_URI on Vercel and whitelist Vercel IPs (0.0.0.0/0) in MongoDB Atlas.'
+    });
+  } else {
+    next();
+  }
+});
+
 // routes
 app.use('/api/auth', authRoutes);
 app.use('/api/customers', customerRoutes);
